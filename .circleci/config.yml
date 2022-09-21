@@ -166,6 +166,7 @@ jobs:
       - run: 
           name: inventory 
           command: |
+            cat ~/inventory.txt
             cat ~/inventory.txt >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
       - run:
