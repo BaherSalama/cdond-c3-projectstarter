@@ -147,18 +147,11 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --output text >> ~/project/.circleci/ansible/inventory.txt
-      - run:
-          name: Get DNS to memstach
-          command: |
-            PUBLIC_DNS=$(aws ec2 describe-instances --query "Reservations[*].Instances[0].PublicDnsName" --output text)
-            echo ${PUBLIC_DNS}
-            curl -H "Content-Type: text/plain" \
-               -H "token: ${CIRCLE_WORKFLOW_ID}" \
-               --request PUT \
-               --data ${PUBLIC_DNS} \
-               https://api.memstash.io/values/public_dns
-
+            aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --output text >> .circleci/ansible/inventory.txt
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/.circleci/ansible/inventory.txt
       - destroy-environment
 
   configure-infrastructure:
@@ -168,14 +161,9 @@ jobs:
       - checkout
       - add_ssh_keys:
           fingerprints: ["20:7e:32:79:6c:84:28:0c:db:8c:1a:02:4c:be:b7:6d"]
-      - run:
-          name: Get the public DNS from memstach
-          command: |
-            PUBLIC_DNS=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/public_dns)
-            echo ${PUBLIC_DNS}
-            cd .circleci/ansible/
-            echo ${PUBLIC_DNS} >> ./inventory
-            cat ./inventory
+      - attach_workspace:
+          at: project/.circleci/ansible/inventory.txt
+      - run: cat ~/project/.circleci/ansible/inventory.txt
       - run:
           name: Install dependencies
           command: |
