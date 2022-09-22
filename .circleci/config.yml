@@ -16,17 +16,15 @@ commands:
     steps:
       - run:
           name: Revert migrations
-          # Add when this will run
+          when: on_fail
           command: |
-            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS = 1
-            if(( $SUCCESS==1 )); 
-            then
-            #  cd ~/project/backend
-            #  npm install
-            #  Add revert code here. You can find this in the Getting Started section.
-              exit 1
-            fi
+              SUCCESS=$(curl --insecure  https://kvdb.io/9GE4jRtKznmVKRfvdBABBe/migration_<< parameters.workflow_id >>)
+              if (( $SUCCESS == 1 ));
+              then
+                  cd ~/project/backend
+                  npm install
+              fi
+               
 jobs:
   build-frontend:
     docker:
@@ -183,25 +181,20 @@ jobs:
   run-migrations:
     docker:
       - image: circleci/node:13.8.0
+        user: root
     steps:
       - checkout
       - restore_cache:
           keys: [backend-build]
       - run:
+          name: Install dependencies
+          command: |
+            apt-get update
+            apt -y install awscli
+      - run:
           name: Run migrations
           command: |
             cd backend
-            echo ENVIRONMENT=production >> ".env"
-            echo NODE_ENV=production >> ".env"
-            echo TYPEORM_CONNECTION=$TYPEORM_CONNECTION >> ".env"
-            echo TYPEORM_MIGRATIONS_DIR=$TYPEORM_MIGRATIONS_DIR >> ".env"
-            echo TYPEORM_ENTITIES=$TYPEORM_ENTITIES >> ".env"
-            echo TYPEORM_MIGRATIONS=$TYPEORM_MIGRATIONS >> ".env"
-            echo TYPEORM_HOST=$TYPEORM_HOST >> ".env"
-            echo TYPEORM_PORT=$TYPEORM_PORT >> ".env"
-            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> ".env"
-            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> ".env"
-            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> ".env"
             npm install
             npm run migrations > migrations_dump.txt
       - run:
