@@ -12,15 +12,5 @@
   become: true
   shell: |
     cd backend/
-    npm i
-- name: "build node"
-  become: true
-  shell: |
-    cd backend/
-    npm run build
-    
-- name: "Start server"
-  become: true
-  shell: |
-    cd backend/
-    pm2 start npm --name backend -- start --port 3100
+    pm2 stop default
+    pm2 start npm -- start
